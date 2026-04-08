@@ -168,6 +168,13 @@
           <input type="text" id="categoria" readonly placeholder="Preencha a data de nascimento" style="background:#f4f4f2;color:#6b6b66;cursor:default">
         </div>
       </div>
+      <div class="form-group">
+        <label>Local de Treino</label>
+        <select id="local-treino">
+          <option value="">Carregando locais...</option>
+        </select>
+        <div style="font-size:12px;color:var(--texto-leve);margin-top:4px">Selecione o local onde você irá treinar (opcional)</div>
+      </div>
     </div>
     <div class="btn-group">
       <button class="btn-primary" onclick="irPara(1)">Continuar →</button>
@@ -438,6 +445,7 @@ function gerarResumo() {
     '<tr><td>Endereço</td><td>' + end + '</td></tr>' +
     '<tr><td>Responsável</td><td>' + v('resp-nome') + '</td></tr>' +
     '<tr><td>Telefone</td><td>' + v('resp-tel') + '</td></tr>' +
+    (v('local-treino') ? '<tr><td>Local de Treino</td><td>' + v('local-treino') + '</td></tr>' : '') +
     '</table>';
 }
 
@@ -478,6 +486,7 @@ async function enviar() {
     respTel:     v('resp-tel'),
     respEmail:   v('resp-email'),
     respParent:  v('resp-parent'),
+    localTreino: v('local-treino'),
     fotoRostoB64: fotoRosto ? await toBase64(fotoRosto) : '',
     fotoRostoNome: fotoRosto ? fotoRosto.name : '',
     fotoRGB64:    fotoRG    ? await toBase64(fotoRG)    : '',
@@ -496,6 +505,27 @@ async function enviar() {
     alert('Erro ao enviar. Verifique sua conexão e tente novamente.');
   }
 }
+
+// ── LOCAIS DE TREINO ──────────────────────────────────────
+async function carregarLocais() {
+  var sel = document.getElementById('local-treino');
+  try {
+    var res = await fetch(SCRIPT_URL + '?acao=listarEscolinhas&t=' + Date.now());
+    var text = await res.text();
+    var i = text.indexOf('{'); if (i > 0) text = text.substring(i);
+    var data = JSON.parse(text);
+    sel.innerHTML = '<option value="">Não sei / Nenhum</option>';
+    (data.escolinhas || []).forEach(function(esc) {
+      var opt = document.createElement('option');
+      opt.value = esc.nome;
+      opt.textContent = esc.nome + (esc.endereco ? ' — ' + esc.endereco : '');
+      sel.appendChild(opt);
+    });
+  } catch(e) {
+    sel.innerHTML = '<option value="">Não sei / Nenhum</option>';
+  }
+}
+carregarLocais();
 
 // Máscaras
 document.getElementById('cpf').addEventListener('input', function() {
