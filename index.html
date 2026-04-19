@@ -58,6 +58,42 @@
   .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b6b66' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; }
 
+  /* Badge de categoria automática */
+  .categoria-badge {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: var(--verde-claro);
+    border: 1.5px solid #b6dfc7;
+  }
+  .categoria-badge.vazio {
+    background: var(--cinza);
+    border-color: var(--cinza-borda);
+  }
+  .categoria-badge.erro-borda {
+    background: #fdf0f0;
+    border-color: var(--erro);
+  }
+  .badge-icone {
+    font-size: 20px;
+    line-height: 1;
+  }
+  .badge-info {}
+  .badge-nome {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--verde-escuro);
+    line-height: 1.2;
+  }
+  .badge-nome.vazio { color: var(--texto-leve); font-weight: 400; font-size: 15px; }
+  .badge-sub {
+    font-size: 12px;
+    color: #2e7a4f;
+    margin-top: 2px;
+  }
+
   .upload-area { border: 2px dashed var(--cinza-borda); border-radius: 12px; padding: 24px 16px; text-align: center; cursor: pointer; transition: all 0.2s; position: relative; }
   .upload-area:hover { border-color: var(--verde); background: var(--verde-claro); }
   .upload-area input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
@@ -77,12 +113,6 @@
   .check-label { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; color: var(--texto); cursor: pointer; }
   .check-label input[type="checkbox"] { width: 18px; height: 18px; min-width: 18px; margin-top: 2px; accent-color: var(--verde); }
 
-  .resumo-table { width: 100%; font-size: 14px; border-collapse: collapse; }
-  .resumo-table tr { border-bottom: 1px solid #f0f0ec; }
-  .resumo-table td { padding: 9px 4px; }
-  .resumo-table td:first-child { color: var(--texto-leve); width: 40%; }
-  .resumo-table td:last-child { font-weight: 500; }
-
   .enviando { display: none; text-align: center; padding: 20px; color: var(--texto-leve); font-size: 14px; }
   .spinner { width: 28px; height: 28px; border: 3px solid var(--cinza-borda); border-top-color: var(--verde); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 10px; }
   @keyframes spin { to { transform: rotate(360deg); } }
@@ -92,7 +122,6 @@
   .sucesso h2 { font-family: 'Sora', sans-serif; font-size: 22px; font-weight: 600; color: var(--verde-escuro); margin-bottom: 10px; }
   .sucesso p { font-size: 14px; color: var(--texto-leve); line-height: 1.6; }
 
-  /* Grid para opcões de local */
   .local-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 12px; }
   .local-card { padding: 14px; border: 2px solid var(--cinza-borda); border-radius: 10px; cursor: pointer; transition: all 0.2s; background: white; }
   .local-card:hover { border-color: var(--verde); background: var(--verde-claro); }
@@ -100,6 +129,18 @@
   .local-card input[type="radio"] { margin-right: 8px; }
   .local-nome { font-weight: 600; color: var(--verde-escuro); }
   .local-info { font-size: 12px; color: var(--texto-leve); margin-top: 4px; }
+
+  /* Info sobre regra de categoria */
+  .regra-info {
+    background: #fffbe6;
+    border: 1px solid #f0d060;
+    border-radius: 8px;
+    padding: 10px 13px;
+    font-size: 12px;
+    color: #7a5c00;
+    margin-top: 10px;
+    line-height: 1.5;
+  }
 </style>
 </head>
 <body>
@@ -155,7 +196,7 @@
 
       <div class="form-group">
         <label>Data de Nascimento <span class="req">*</span></label>
-        <input type="date" id="nascimento">
+        <input type="date" id="nascimento" onchange="atualizarIdadeECategoria()">
         <div class="msg-erro" id="erro-nascimento">Data é obrigatória</div>
       </div>
 
@@ -205,16 +246,16 @@
     </div>
   </div>
 
-  <!-- STEP 1: Modalidade e Categoria -->
+  <!-- STEP 1: Modalidade e Categoria (automática) -->
   <div id="step-1" class="step">
     <p class="step-label">Etapa 2 de 5</p>
-    <h2 class="step-title">Modalidade e Categoria</h2>
-    <p class="step-sub">Escolha a modalidade e categoria</p>
+    <h2 class="step-title">Modalidade</h2>
+    <p class="step-sub">Escolha a modalidade — a categoria será definida automaticamente pela idade</p>
 
     <div class="card">
       <div class="form-group">
         <label>Modalidade <span class="req">*</span></label>
-        <select id="modalidade" onchange="atualizarCategorias()">
+        <select id="modalidade" onchange="atualizarIdadeECategoria()">
           <option value="">Selecione a modalidade</option>
           <option value="Handebol">Handebol</option>
           <option value="Volei">Voleibol</option>
@@ -224,11 +265,18 @@
       </div>
 
       <div class="form-group">
-        <label>Categoria <span class="req">*</span></label>
-        <select id="categoria">
-          <option value="">Selecione primeiro a modalidade</option>
-        </select>
-        <div class="msg-erro" id="erro-categoria">Categoria é obrigatória</div>
+        <label>Categoria (automática)</label>
+        <div class="categoria-badge vazio" id="categoria-badge">
+          <div class="badge-icone">🏷️</div>
+          <div class="badge-info">
+            <div class="badge-nome vazio" id="categoria-nome">Preencha o nascimento e a modalidade</div>
+          </div>
+        </div>
+        <div class="msg-erro" id="erro-categoria">Categoria não pôde ser determinada</div>
+        <!-- campo oculto para guardar o valor -->
+        <input type="hidden" id="categoria" value="">
+
+        <div class="regra-info" id="regra-categoria" style="display:none;"></div>
       </div>
     </div>
 
@@ -294,7 +342,7 @@
     </div>
   </div>
 
-  <!-- STEP 3: LOCAL DE TREINO (NOVO!) -->
+  <!-- STEP 3: Local de Treino -->
   <div id="step-3" class="step">
     <p class="step-label">Etapa 4 de 5</p>
     <h2 class="step-title">Local de Treino</h2>
@@ -315,7 +363,7 @@
     </div>
   </div>
 
-  <!-- STEP 4: Dados do Responsável (ANTIGO STEP 3) -->
+  <!-- STEP 4: Dados do Responsável -->
   <div id="step-4" class="step">
     <p class="step-label">Etapa 5 de 5</p>
     <h2 class="step-title">Responsável</h2>
@@ -385,12 +433,131 @@
 </div>
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyvXWWN-OrsoTu3SCNZMkrmwq-Yp3qeNR89C0fXCqZSXrEfOFqfpWnH9G5SQoyiWSKGgw/exec'; // Substituir com URL real
-const categorias = {
-  Handebol: ['Sub-12', 'Sub-14', 'Sub-16', 'Sub-18', 'Adulto'],
-  Volei:    ['Sub-12', 'Sub-14', 'Sub-16', 'Sub-18', 'Adulto'],
-  Xadrez:   ['Sub-8', 'Sub-10', 'Sub-12', 'Sub-14', 'Sub-16']
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyvXWWN-OrsoTu3SCNZMkrmwq-Yp3qeNR89C0fXCqZSXrEfOFqfpWnH9G5SQoyiWSKGgw/exec';
+
+/*
+  REGRAS DE CATEGORIA POR IDADE (ano de nascimento vs. ano em curso)
+  Handebol / Voleibol:
+    ≤ 8 anos  → Sub-8  (somente Xadrez)
+    ≤ 10 anos → Sub-10 (somente Xadrez)
+    ≤ 12 anos → Sub-12
+    ≤ 14 anos → Sub-14
+    ≤ 16 anos → Sub-16
+    ≤ 18 anos → Sub-18
+    > 18 anos → Adulto
+  Xadrez:
+    ≤ 8 anos  → Sub-8
+    ≤ 10 anos → Sub-10
+    ≤ 12 anos → Sub-12
+    ≤ 14 anos → Sub-14
+    ≤ 16 anos → Sub-16
+    > 16 anos → Adulto (Xadrez não tem sub-18 / adulto separado nesse esporte)
+*/
+
+const regrasCategorias = {
+  Handebol: [
+    { limite: 12, cat: 'Sub-12' },
+    { limite: 14, cat: 'Sub-14' },
+    { limite: 16, cat: 'Sub-16' },
+    { limite: 18, cat: 'Sub-18' },
+    { limite: Infinity, cat: 'Adulto' }
+  ],
+  Volei: [
+    { limite: 12, cat: 'Sub-12' },
+    { limite: 14, cat: 'Sub-14' },
+    { limite: 16, cat: 'Sub-16' },
+    { limite: 18, cat: 'Sub-18' },
+    { limite: Infinity, cat: 'Adulto' }
+  ],
+  Xadrez: [
+    { limite: 8,  cat: 'Sub-8'  },
+    { limite: 10, cat: 'Sub-10' },
+    { limite: 12, cat: 'Sub-12' },
+    { limite: 14, cat: 'Sub-14' },
+    { limite: 16, cat: 'Sub-16' },
+    { limite: Infinity, cat: 'Adulto' }
+  ]
 };
+
+// Calcula a idade (anos completos até hoje)
+function calcularIdade(nascimento) {
+  const hoje = new Date();
+  const nasc = new Date(nascimento);
+  let idade = hoje.getFullYear() - nasc.getFullYear();
+  const m = hoje.getMonth() - nasc.getMonth();
+  if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) idade--;
+  return idade;
+}
+
+// Determina a categoria pela idade e modalidade
+function determinarCategoria(idade, modalidade) {
+  const regras = regrasCategorias[modalidade];
+  if (!regras) return null;
+  for (const r of regras) {
+    if (idade <= r.limite) return r.cat;
+  }
+  return null;
+}
+
+// Atualiza badge de categoria toda vez que nascimento ou modalidade mudar
+function atualizarIdadeECategoria() {
+  const nascVal   = document.getElementById('nascimento').value;
+  const modalVal  = document.getElementById('modalidade').value;
+  const badge     = document.getElementById('categoria-badge');
+  const nomeEl    = document.getElementById('categoria-nome');
+  const hiddenCat = document.getElementById('categoria');
+  const regrasEl  = document.getElementById('regra-categoria');
+  const erroEl    = document.getElementById('erro-categoria');
+
+  // Limpa estado anterior
+  badge.className = 'categoria-badge vazio';
+  badge.querySelector('.badge-icone').textContent = '🏷️';
+  nomeEl.className = 'badge-nome vazio';
+  nomeEl.textContent = 'Preencha o nascimento e a modalidade';
+  hiddenCat.value = '';
+  regrasEl.style.display = 'none';
+  erroEl.classList.remove('visivel');
+
+  if (!nascVal || !modalVal) return;
+
+  const idade = calcularIdade(nascVal);
+  if (isNaN(idade) || idade < 0) return;
+
+  const cat = determinarCategoria(idade, modalVal);
+
+  if (cat) {
+    hiddenCat.value = cat;
+    badge.className = 'categoria-badge';
+    nomeEl.className = 'badge-nome';
+    nomeEl.textContent = cat;
+    badge.querySelector('.badge-icone').textContent = cat === 'Adulto' ? '🏆' : '🎯';
+
+    // Linha de detalhe: "X anos → Sub-XX"
+    let subTexto = document.createElement('div');
+    subTexto.className = 'badge-sub';
+    subTexto.textContent = idade + ' anos · ' + modalVal;
+    // Remove sub anterior se existir
+    const subAnt = badge.querySelector('.badge-sub');
+    if (subAnt) subAnt.remove();
+    badge.querySelector('.badge-info').appendChild(subTexto);
+
+    // Exibe a tabela de regras da modalidade
+    const regras = regrasCategorias[modalVal];
+    let linhas = regras.map(r => {
+      const ativo = r.cat === cat;
+      const lim   = r.limite === Infinity ? '19+' : 'até ' + r.limite + ' anos';
+      return `<span style="${ativo ? 'font-weight:600; color:#115c36;' : ''}">${lim}: ${r.cat}</span>`;
+    }).join(' &nbsp;|&nbsp; ');
+    regrasEl.innerHTML = '📋 Regras de ' + modalVal + ': ' + linhas;
+    regrasEl.style.display = 'block';
+  } else {
+    badge.className = 'categoria-badge erro-borda';
+    nomeEl.className = 'badge-nome';
+    nomeEl.style.color = 'var(--erro)';
+    nomeEl.textContent = 'Idade não se encaixa em nenhuma categoria';
+    hiddenCat.value = '';
+  }
+}
 
 let passosCompletos = 0;
 let locaisTreino = [];
@@ -399,7 +566,6 @@ function v(id) { return document.getElementById(id).value.trim(); }
 function showError(id) { document.getElementById('erro-' + id).classList.add('visivel'); }
 function hideError(id) { document.getElementById('erro-' + id).classList.remove('visivel'); }
 
-// ── NAVEGAÇÃO ──────────────────────────────────────────────
 function irProxima(step) {
   if (!validarStep(step)) return;
   document.getElementById('step-' + step).classList.remove('active');
@@ -423,25 +589,30 @@ function atualizarProgress() {
   document.getElementById('progress').style.width = percent + '%';
 }
 
-// ── VALIDAÇÃO ──────────────────────────────────────────────
 function validarStep(step) {
   let valido = true;
 
   if (step === 0) {
-    if (!v('nome')) { showError('nome'); valido = false; } else hideError('nome');
+    if (!v('nome'))       { showError('nome');       valido = false; } else hideError('nome');
     if (!v('cpf') || v('cpf').length < 11) { showError('cpf'); valido = false; } else hideError('cpf');
-    if (!v('rg')) { showError('rg'); valido = false; } else hideError('rg');
+    if (!v('rg'))         { showError('rg');         valido = false; } else hideError('rg');
     if (!v('nascimento')) { showError('nascimento'); valido = false; } else hideError('nascimento');
-    if (!v('sexo')) { showError('sexo'); valido = false; } else hideError('sexo');
+    if (!v('sexo'))       { showError('sexo');       valido = false; } else hideError('sexo');
   }
 
   if (step === 1) {
     if (!v('modalidade')) { showError('modalidade'); valido = false; } else hideError('modalidade');
-    if (!v('categoria')) { showError('categoria'); valido = false; } else hideError('categoria');
+    // Validar que a categoria foi calculada automaticamente
+    if (!v('categoria')) {
+      showError('categoria');
+      valido = false;
+    } else {
+      hideError('categoria');
+    }
   }
 
   if (step === 2) {
-    if (!v('rua')) { showError('rua'); valido = false; } else hideError('rua');
+    if (!v('rua'))    { showError('rua');    valido = false; } else hideError('rua');
     if (!v('numero')) { showError('numero'); valido = false; } else hideError('numero');
     if (!v('bairro')) { showError('bairro'); valido = false; } else hideError('bairro');
     if (!v('cidade')) { showError('cidade'); valido = false; } else hideError('cidade');
@@ -449,7 +620,7 @@ function validarStep(step) {
   }
 
   if (step === 4) {
-    if (!v('resp-nome')) { showError('resp-nome'); valido = false; } else hideError('resp-nome');
+    if (!v('resp-nome'))   { showError('resp-nome');   valido = false; } else hideError('resp-nome');
     if (!v('resp-parent')) { showError('resp-parent'); valido = false; } else hideError('resp-parent');
     if (!v('resp-tel') || v('resp-tel').length < 10) { showError('resp-tel'); valido = false; } else hideError('resp-tel');
     if (!document.getElementById('consentimento').checked) { alert('Você deve concordar com os termos'); valido = false; }
@@ -458,27 +629,12 @@ function validarStep(step) {
   return valido;
 }
 
-function atualizarCategorias() {
-  const modalidade = v('modalidade');
-  const catSelect = document.getElementById('categoria');
-  catSelect.innerHTML = '<option value="">Selecione a categoria</option>';
-  if (categorias[modalidade]) {
-    categorias[modalidade].forEach(cat => {
-      let opt = document.createElement('option');
-      opt.value = cat;
-      opt.textContent = cat;
-      catSelect.appendChild(opt);
-    });
-  }
-}
-
 // ── UPLOAD DE FOTOS ────────────────────────────────────────
 function setupUpload(inputId, previewId, imgId, nameId) {
-  const input = document.getElementById(inputId);
+  const input   = document.getElementById(inputId);
   const preview = document.getElementById(previewId);
-  const img = document.getElementById(imgId);
-  const name = document.getElementById(nameId);
-
+  const img     = document.getElementById(imgId);
+  const name    = document.getElementById(nameId);
   input.addEventListener('change', function() {
     if (this.files && this.files[0]) {
       const reader = new FileReader();
@@ -492,14 +648,14 @@ function setupUpload(inputId, previewId, imgId, nameId) {
   });
 }
 
-setupUpload('foto-rg', 'preview-rg', 'img-rg', 'name-rg');
+setupUpload('foto-rg',    'preview-rg',    'img-rg',    'name-rg');
 setupUpload('foto-rosto', 'preview-rosto', 'img-rosto', 'name-rosto');
 
 async function toBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onload  = () => resolve(reader.result.split(',')[1]);
     reader.onerror = error => reject(error);
   });
 }
@@ -507,12 +663,11 @@ async function toBase64(file) {
 // ── CARREGAR LOCAIS DE TREINO ──────────────────────────────
 async function carregarLocaisTreino() {
   try {
-    const res = await fetch(SCRIPT_URL + '?acao=listarLocaisTreino');
+    const res  = await fetch(SCRIPT_URL + '?acao=listarLocaisTreino');
     const data = await res.json();
     locaisTreino = data.locais || [];
     renderizarLocais();
   } catch(e) {
-    console.log('Locais não carregados (erro na URL ou API)');
     document.getElementById('locais-container').innerHTML = '<p style="color: var(--texto-leve); font-size: 13px; padding: 12px;">Nenhum local cadastrado</p>';
   }
 }
@@ -523,7 +678,6 @@ function renderizarLocais() {
     container.innerHTML = '<p style="color: var(--texto-leve); font-size: 13px; padding: 12px;">Nenhum local cadastrado</p>';
     return;
   }
-
   container.innerHTML = '';
   locaisTreino.forEach(local => {
     const card = document.createElement('label');
@@ -534,21 +688,18 @@ function renderizarLocais() {
       <div class="local-info">📍 ${local.endereco || 'Sem endereço'}</div>
       <div class="local-info">⏰ ${local.horario || 'Horário não informado'}</div>
     `;
-
     card.addEventListener('click', function() {
       document.querySelectorAll('.local-card').forEach(c => c.classList.remove('selecionado'));
       card.classList.add('selecionado');
-      const radio = card.querySelector('input[type="radio"]');
-      radio.checked = true;
+      card.querySelector('input[type="radio"]').checked = true;
     });
-
     container.appendChild(card);
   });
 }
 
 // ── ENVIO DO CADASTRO ──────────────────────────────────────
 const fotoRosto = document.getElementById('foto-rosto');
-const fotoRG = document.getElementById('foto-rg');
+const fotoRG    = document.getElementById('foto-rg');
 
 async function enviarCadastro() {
   document.getElementById('btn-enviar-group').style.display = 'none';
@@ -575,11 +726,11 @@ async function enviarCadastro() {
     respTel:     v('resp-tel'),
     respEmail:   v('resp-email'),
     respParent:  v('resp-parent'),
-    fotoRostoB64: fotoRosto.files[0] ? await toBase64(fotoRosto.files[0]) : '',
+    fotoRostoB64:  fotoRosto.files[0] ? await toBase64(fotoRosto.files[0]) : '',
     fotoRostoNome: fotoRosto.files[0] ? fotoRosto.files[0].name : '',
-    fotoRGB64:    fotoRG.files[0] ? await toBase64(fotoRG.files[0]) : '',
-    fotoRGNome:   fotoRG.files[0] ? fotoRG.files[0].name : '',
-    localTreino:  localSelecionado ? localSelecionado.value : '',
+    fotoRGB64:     fotoRG.files[0]    ? await toBase64(fotoRG.files[0])    : '',
+    fotoRGNome:    fotoRG.files[0]    ? fotoRG.files[0].name               : '',
+    localTreino: localSelecionado ? localSelecionado.value : '',
     dataEnvio:   new Date().toLocaleString('pt-BR')
   };
 
@@ -597,18 +748,18 @@ async function enviarCadastro() {
 
 // Máscaras
 document.getElementById('cpf').addEventListener('input', function() {
-  let v = this.value.replace(/\D/g,'').slice(0,11);
-  if (v.length > 9) v = v.slice(0,3)+'.'+v.slice(3,6)+'.'+v.slice(6,9)+'-'+v.slice(9);
-  else if (v.length > 6) v = v.slice(0,3)+'.'+v.slice(3,6)+'.'+v.slice(6);
-  else if (v.length > 3) v = v.slice(0,3)+'.'+v.slice(3);
-  this.value = v;
+  let val = this.value.replace(/\D/g,'').slice(0,11);
+  if (val.length > 9)      val = val.slice(0,3)+'.'+val.slice(3,6)+'.'+val.slice(6,9)+'-'+val.slice(9);
+  else if (val.length > 6) val = val.slice(0,3)+'.'+val.slice(3,6)+'.'+val.slice(6);
+  else if (val.length > 3) val = val.slice(0,3)+'.'+val.slice(3);
+  this.value = val;
 });
 
 document.getElementById('resp-tel').addEventListener('input', function() {
-  let v = this.value.replace(/\D/g,'').slice(0,11);
-  if (v.length > 6) v = '('+v.slice(0,2)+') '+v.slice(2,7)+'-'+v.slice(7);
-  else if (v.length > 2) v = '('+v.slice(0,2)+') '+v.slice(2);
-  this.value = v;
+  let val = this.value.replace(/\D/g,'').slice(0,11);
+  if (val.length > 6)      val = '('+val.slice(0,2)+') '+val.slice(2,7)+'-'+val.slice(7);
+  else if (val.length > 2) val = '('+val.slice(0,2)+') '+val.slice(2);
+  this.value = val;
 });
 
 document.getElementById('cep').addEventListener('input', function() {
@@ -633,23 +784,22 @@ async function buscarCEP(cep) {
     if (!res.ok) throw new Error('CEP não encontrado');
     var data = await res.json();
 
-    campoRua.value    = data.street    || '';
+    campoRua.value    = data.street       || '';
     campoBairro.value = data.neighborhood || '';
-    campoCidade.value = data.city      || '';
-    campoEstado.value = data.state     || '';
+    campoCidade.value = data.city         || '';
+    campoEstado.value = data.state        || '';
 
     campoCEP.style.borderColor = '#1e8449';
     campoCEP.placeholder = '00000-000';
 
     ['rua','bairro','cidade','estado'].forEach(function(id) {
-      var el = document.getElementById('erro-' + id);
-      if (el) el.style.display = 'none';
+      var el    = document.getElementById('erro-' + id);
       var input = document.getElementById(id);
+      if (el)    el.style.display = 'none';
       if (input) input.style.borderColor = '';
     });
 
     setTimeout(function(){ document.getElementById('numero').focus(); }, 100);
-
   } catch(e) {
     campoCEP.style.borderColor = '#d63b3b';
     campoCEP.placeholder = 'CEP não encontrado';
@@ -660,7 +810,6 @@ async function buscarCEP(cep) {
   }
 }
 
-// Carregar locais ao abrir a página
 window.addEventListener('load', carregarLocaisTreino);
 </script>
 </body>
